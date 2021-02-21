@@ -1,0 +1,6 @@
+.vs
+Debug
+MonacoFileTest/Debug
+*.vcxproj.filters
+*.vcxproj.user
+*.dll
