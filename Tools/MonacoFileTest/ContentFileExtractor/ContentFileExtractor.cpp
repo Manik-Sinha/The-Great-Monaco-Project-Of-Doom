@@ -96,7 +96,7 @@ int main()
         strm.next_in = Z_NULL;
         ret = inflateInit(&strm);
         if (ret != Z_OK)
-            return ret;
+            continue;
 
         std::vector<char> fileContents;
 
@@ -116,12 +116,16 @@ int main()
             case Z_DATA_ERROR:
             case Z_MEM_ERROR:
                 (void)inflateEnd(&strm);
-                return ret;
+                //return ret;
+                break;
             }
 
             have = CHUNK - strm.avail_out;
             size_t oldSz = fileContents.size();
             fileContents.resize(oldSz + have);
+
+            if (have == 0)
+                break;
 
             memcpy(&fileContents[oldSz], out, have);
 
@@ -133,13 +137,20 @@ int main()
 
         std::cout << "Finished decompression." << std::endl;
 
+        if (fileContents.size() == 0)
+        {
+            std::cout << "Empty file detected, skipping " << baseIdx << std::endl;
+            baseIdx += FileBoundary;
+            continue;
+        }
+
         ////////////////////////////////////////////////////////////////////////////////
         //
         //  SAVE OUT THE SERIALIZED CONTENT
         //
         ////////////////////////////////////////////////////////////////////////////////
 
-        std::string filepath = outDir + baseName + std::to_string(idx) + ".xml";
+        std::string filepath = outDir + baseName + std::to_string(baseIdx) + ".xml";
         std::cout << "Saving File to " << filepath << std::endl;
 
         std::ofstream fout(filepath, std::ios::out | std::ios::binary);
