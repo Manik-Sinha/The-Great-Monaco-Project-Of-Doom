@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en-US">
+    <head>
+        <meta charset="utf-8">
+        <title>Monaco Tool</title>
+        <script defer src="scripts/main.js"></script>
+    </head>
+    <body>
+        <label for="select-level">Select Level:</label>
+        <select name="select-level" id="select-level">
+            <optgroup label="Locksmith's Story">
+                <option value="ELS01" selected>The Prison Break</option>
+                <option value="ELS02">Hijack at the Hairpin</option>
+            </optgroup>
+            <optgroup label="Pickpocket's Story">
+                <option value="EPP01">The Sound of Violence</option>
+                <option value="EPP02">Foreign Affairs</option>
+            </optgroup>
+            <optgroup label="Origins">
+                <option value="P01">Prologue: The Mole</option>
+                <option value="P02">Prologue: The Lookout</option>
+            </optgroup>
+            <optgroup label="Fin">
+                <option value="F01">After the Fire</option>
+                <option value="F02">Cache</option>
+            </optgroup>
+        </select>
+        <label for="select-floor">Select Floor</label>
+        <select name="select-floor" id="select-floor">
+            <option value="3">Street Level</option>
+            <option value="2">Tunnels</option>
+            <option selected value="1">Cell Block</option>
+        </select>
+        <img id="blueprint" src="images/ELS01-1.jpg" alt="Prison Break">
+        <!--
+            Prison Break
+                Street Level
+                Tunnels
+            ==> Cell Block
+            
+            Hijack
+            ==> Route Moyenne Corniche
+                Monaco Railway
+                Shoreline
+            
+            Sound of Violence
+                same as hijack
+
+            Foreign Affairs
+                Main Office
+                Second Floor
+            ==> Stret Level
+
+            Prologue: Mole
+                Underground Caverns
+            
+            Prologue: Lookout
+                Sun City
+            
+            After the Fire
+                Helipad
+                Penthouse Floor
+                Apartment Floor
+            ==> Lobby Floor
+
+            Cache
+                Overlook
+                Second Floor
+            ==> Street Level
+        -->
+    </body>
+</html>
