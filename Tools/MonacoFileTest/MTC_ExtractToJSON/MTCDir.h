@@ -24,10 +24,36 @@ struct MTCDir
         /// </summary>
         unsigned int dirID;
 
-        unsigned int hidden_unkn0;
-        unsigned int hidden_unkn1; // Current guess : (BOOL) isEncrypted
-        unsigned int hidden_unkn2; // Current guess : (UINT) size of file in MDF (including zero padding)
-        unsigned int hidden_unkn3; // Current guess : (UINT) uncompressed file size
+        /// <summary>
+        /// It's not 100% known what this int bool does, but it seems to be related to
+        /// signaling if PNG files in Worlds mdf are corrupted.
+        /// </summary>
+        unsigned int confabed;
+
+        /// <summary>
+        /// It's not 100% known what this int book does. It has always been observed to
+        /// be 0 for both the World and Content MTC. The current beleif is that it is 
+        /// a flag for if the file is encrypted.
+        /// 
+        /// Another hypothesis is that this is a flag for if things should be remain
+        /// hidden (From what exactly? Who knows.)
+        /// </summary>
+        unsigned int encrypted;
+
+        /// <summary>
+        /// This is only a guess, but it seems to be the size the data payload takes up
+        /// in the MDF, including any empty padding.
+        /// 
+        /// This is different from mdfSize in that the mdfSize does not include padding.
+        /// </summary>
+        unsigned int alignmentSize;
+
+        /// <summary>
+        /// This is only a guess, but it is beleive to be the final size of the size. This
+        /// is different from mdfSize, because that size can be different if there is 
+        /// padding corruption, or if the file in the MDF is compressed.
+        /// </summary>
+        unsigned int fileSize;
 
         /// <summary>
         /// The position the file contents are located in the MDF file.

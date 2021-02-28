@@ -87,12 +87,12 @@ int MTCDir::LoadMTC(std::string filename)
 
         // uint unk;
         int unk_0 = *(int*)&buffer[pos];
-        filePtr.hidden_unkn0 = unk_0;
+        filePtr.confabed = unk_0;
         pos += 4;
 
         // uint unk <hidden = true>;
         int unk_1 = *(int*)&buffer[pos];
-        filePtr.hidden_unkn1 = unk_1;
+        filePtr.encrypted = unk_1;
         pos += 4;
 
         // uint realpointer; //pointer for .mdf
@@ -101,12 +101,12 @@ int MTCDir::LoadMTC(std::string filename)
 
         // uint unk <hidden = true>;
         int unk_2 = *(int*)&buffer[pos];
-        filePtr.hidden_unkn2 = unk_2;
+        filePtr.alignmentSize = unk_2;
         pos += 4;
 
         // uint unk;
         int unk_3 = *(int*)&buffer[pos];
-        filePtr.hidden_unkn3 = unk_3;
+        filePtr.fileSize = unk_3;
         pos += 4;
 
         // uint64 realFileSize; // files in .mdf
