@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en-US">
+    <head style="height: 100%">
+        <meta charset="utf-8">
+        <title>Monaco Tool</title>
+        <script defer src="scripts/main.js"></script>
+    </head>
+    <body>
+		<div id="App"></div>
+			<table style="width: 100vw;">
+				<tbody style="display: table; width:100%;">
+					<tr>
+						<td colspan=2>
+							<label for="select-level">Select Level:</label>
+							<select name="select-level" id="select-level">
+								<optgroup label="Locksmith's Story">
+									<option value="ELS01" selected>The Prison Break</option>
+									<option value="ELS02">Hijack at the Hairpin</option>
+								</optgroup>
+								<optgroup label="Pickpocket's Story">
+									<option value="EPP01">The Sound of Violence</option>
+									<option value="EPP02">Foreign Affairs</option>
+								</optgroup>
+								<optgroup label="Origins">
+									<option value="P01">Prologue: The Mole</option>
+									<option value="P02">Prologue: The Lookout</option>
+								</optgroup>
+								<optgroup label="Fin">
+									<option value="F01">After the Fire</option>
+									<option value="F02">Cache</option>
+								</optgroup>
+							</select>
+							<label for="select-floor">Select Floor</label>
+							<select name="select-floor" id="select-floor">
+								<option value="3">Street Level</option>
+								<option value="2">Tunnels</option>
+								<option selected value="1">Cell Block</option>
+							</select>
+						</td>
+					</tr>
+					<tr style="height:100%;">
+						<td style="width:60%">
+							<div style="overflow:scroll;width:70vw; height:90vh;">
+								<img id="blueprint" src="images/ELS01-1.jpg" alt="Prison Break">
+							</div>
+						</td>
+						<td style="height:100%;">
+							<table bgcolor="gray" style="width:100%; height:100%;">
+								<tr style="overflow:hidden; height:100%">
+									<td style="height:100%">
+										<textarea style="width:100%; height:400px;"></textarea>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<input id="ChatInput" style="width:100%"></input>
+										<button id="SendChat" onclick="OnChatButton()">Send Chat</button>
+										<hr>
+										<input id="IPAddr" style="width:100%"></input>
+										<button id="Connect" onclick="OnConnectButton()">Connect</button>
+										<hr>
+										<button id="Upload" onclick="OnUploadButton()">Upload</button>
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		
+		<script>
+
+var socket = null;
+
+var username = "Gunther";
+var room = "MainLobby";
+var port = 7011; // Sevendy Elevendy
+var host = "localhost";
+
+const urlParams = new URLSearchParams(window.location.search);			
+{
+	let searchUN = urlParams.get("name");
+	let searchRm = urlParams.get("room");
+	let searchHost = urlParams.get("host");
+	let searchPort = urlParams.get("port");
+
+	if(searchUN != null)
+	{
+		username = searchUN;
+		console.log("Found username entry " +searchUN );
+	}
+	if(searchRm != null)
+	{
+		room = searchRm;
+		console.log("Found room entry " + searchRm );
+	}
+	if(searchHost != null)
+	{
+		host = searchHost;
+		console.log("Found host entry " + searchHost );
+	}
+	if(searchPort != null)
+	{
+		port = searchPort;
+		console.log("Found port entry " + searchPort );
+	}
+}
+
+function OnChatButton()
+{
+	alert("TODO");
+	
+	if(socket == null)
+	{
+		alert("Connect first!");
+		return;
+	}
+	// TODO:
+}
+
+// Test for chat functionality through the network. Only meant
+// to be used in the console right now.
+function SendChat(msg)
+{
+	if(socket == null)
+	{
+		console.log("Cannot sent chat, not connected!");
+		return;
+	}
+	
+	socket.send( "{\"msg\":\"chat\", \"data\" : \"" + msg + "\"}");
+	console.log("sent chat");
+}
+
+function OnConnectButton()
+{
+	if(socket != null)
+		DisconnectSocket();
+	else
+	{
+		socket = new WebSocket(`ws://${host}:${port}/MonacoServer`);
+		
+		socket.onopen = 
+			function (event) 
+			{
+			};
+		
+		socket.onmessage = 
+			function (event) 
+			{
+				
+				
+				console.log(event.data);
+				var dataPayl = JSON.parse(event.data);
+				if(dataPayl["msg"] == "auth")
+				{
+					console.log("Verifying");
+					let resp = {};
+					resp["msg"] = "respauth";
+					resp["data"] = 
+						{
+							"key" : dataPayl["data"], 
+							"name" : username,
+							"room" : room
+						};
+					socket.send(JSON.stringify(resp));
+				}
+				
+				else if(dataPayl["msg"] == "entered")
+				{
+					console.log("I've been verified by the server and successfully joined a planning session.");
+				}
+				else if(dataPayl["msg"] == "chat")
+				{
+					console.log("I received one or more chat messages. I should show them in a chatbox");
+				}
+				else if(dataPayl["msg"] == "userlist")
+				{
+					console.log("Got a list of users. If I had a chat user list, I now know what to populate it with.");
+				}
+				else if(dataPayl["msg"] == "sysmsg")
+				{
+					console.log("I received an important chat broadcast from the server or sysadmin.");
+				}
+				else if(dataPayl["msg"] == "userentered")
+				{
+					console.log("One or more new users have entered. I should append them to the list of users in the chat.");
+				}
+				else if(dataPayl["msg"] == "existingusers")
+				{
+					console.log("One or more new users have entered. I should append them to the list of users in the chat.");
+				}
+				else if(dataPayl["msg"] == "userleave")
+				{
+					console.log("One or more existing users have exited. I should removed them from the list of users in the chat.");
+				}
+				else if(dataPayl["msg"] == "dc")
+				{
+					console.log("The server disconnected me. It could be for any reason.");
+				}
+				console.log(event.data);
+			}
+			
+		socket.onerror = 
+			function (event) 
+			{
+				console.log(event.data);
+			}
+			
+		socket.onclose = 
+			function (event) 
+			{
+				console.log(event.data);
+			}
+	}
+}
+
+function OnUploadButton()
+{
+	alert("TODO");
+}
+
+function DisconnectSocket()
+{
+	if(socket != null)
+		socket.close();
+}
+
+		</script>
+        <!--
+            Prison Break
+                Street Level
+                Tunnels
+            ==> Cell Block
+            
+            Hijack
+            ==> Route Moyenne Corniche
+                Monaco Railway
+                Shoreline
+            
+            Sound of Violence
+                same as hijack
+
+            Foreign Affairs
+                Main Office
+                Second Floor
+            ==> Stret Level
+
+            Prologue: Mole
+                Underground Caverns
+            
+            Prologue: Lookout
+                Sun City
+            
+            After the Fire
+                Helipad
+                Penthouse Floor
+                Apartment Floor
+            ==> Lobby Floor
+
+            Cache
+                Overlook
+                Second Floor
+            ==> Street Level
+        -->
+    </body>
+</html>
