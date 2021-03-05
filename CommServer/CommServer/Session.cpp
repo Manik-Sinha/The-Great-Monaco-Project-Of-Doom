@@ -14,21 +14,17 @@ void Session::ServerThreadFunction()
 	while (this->keepRunning == true)
 	{
 		std::vector<UserConPtr> localNewUsers;
-		this->usersNew_mut.lock();
-		std::swap(this->usersNew, localNewUsers);
-		this->usersNew_mut.unlock();
+		lrUsersNew.Swap(localNewUsers);
 
 		std::vector<UserConPtr> localExitUsers;
-		this->usersExit_mut.lock();
-		std::swap(this->usersExit, localExitUsers);
-		this->usersExit_mut.unlock();
+		lrUsersExit.Swap(localExitUsers);
 
 		// Handle exited users first so we don't send anymore messages
 		// to them when we broadcast everything else.
 		if (localExitUsers.size() > 0)
 		{
 			auto send_stream = std::make_shared<WsServer::SendStream>();
-			*send_stream << "{\"msg\":\"userleave\", \"data\":[";
+			*send_stream << R"({"msg":"userleave", "data":[)";
 
 			for (size_t i = 0; i < localExitUsers.size(); ++i)
 			{
@@ -59,7 +55,7 @@ void Session::ServerThreadFunction()
 		{
 			// Send information about these new user(s) to existing users
 			auto msgUserEntered = std::make_shared<WsServer::SendStream>();
-			*msgUserEntered << "{\"msg\":\"userentered\", \"data\":[";
+			*msgUserEntered << R"({"msg":"userentered", "data":[)";
 
 			for (size_t i = 0; i < localNewUsers.size(); ++i)
 			{
@@ -77,7 +73,7 @@ void Session::ServerThreadFunction()
 
 			auto msgConfirmJoined = std::make_shared<WsServer::SendStream>();
 			// There may be more info we want to attach, but for now that's it.
-			*msgConfirmJoined << "{\"msg\" : \"entered\"}"; 
+			*msgConfirmJoined << R"({"msg" : "entered"})"; 
 			for (UserConPtr& ucp : localNewUsers)
 			{
 				this->usersCurrent.push_back(ucp);
@@ -88,14 +84,14 @@ void Session::ServerThreadFunction()
 			// include themselves in the listings.
 
 			auto msgUserList = std::make_shared<WsServer::SendStream>();
-			*msgUserList << "{\"msg\":\"userlist\", \"data\":[";
+			*msgUserList << R"({"msg":"userlist", "data":[)";
 
 			for (size_t i = 0; i < this->usersCurrent.size(); ++i)
 			{
 				if (i != 0)
 					*msgUserList << ", ";
 
-				*msgUserList << "\"" << this->usersCurrent[i]->username << "\"";
+				*msgUserList << R"(")" << this->usersCurrent[i]->username << R"(")";
 			}
 			*msgUserList << "]}";
 
@@ -104,15 +100,15 @@ void Session::ServerThreadFunction()
 		}
 
 		// Get all chat messages
-		this->chatMessages_mut.lock();
+
+		
 		std::vector<MsgChat> localChat;
-		std::swap(localChat, this->chatMessages);
-		this->chatMessages_mut.unlock();
+		lrChatMessages.Swap(localChat);
 
 		if (localChat.empty() == false)
 		{
 			auto msgChat = std::make_shared<WsServer::SendStream>();
-			*msgChat << "{\"msg\":\"chat\", \"data\":[";
+			*msgChat << R"({"msg":"chat", "data":[)";
 			bool insed = false;
 			for (const MsgChat& mc : localChat)
 			{
@@ -122,7 +118,7 @@ void Session::ServerThreadFunction()
 					*msgChat << ", ";
 
 				// TODO: Escape the username and chat string
-				*msgChat << "{\"user\":\"" << mc.user->username << "\", \"data\" : \"" << mc.message << "\"}";
+				*msgChat << R"({"user":")" << mc.user->username << R"(", "data" : ")" << mc.message << R"("})";
 			}
 			*msgChat << "]}";
 
@@ -158,14 +154,14 @@ void Session::StartSession()
 
 void Session::StageNewUser(UserConPtr newUser)
 {
-	this->usersNew_mut.lock();
-	this->usersNew.push_back(newUser);
-	this->usersNew_mut.unlock();
+	{LOCK_SCOPE(lrUsersNew, usersNew)
+		usersNew.push_back(newUser);
+	}
 }
 
 void Session::StageExitingUser(UserConPtr exitingUser)
 {
-	this->usersExit_mut.lock();
-	this->usersExit.push_back(exitingUser);
-	this->usersExit_mut.unlock();
+	{ LOCK_SCOPE(lrUsersExit, usersExit)
+		usersExit.push_back(exitingUser);
+	}
 }

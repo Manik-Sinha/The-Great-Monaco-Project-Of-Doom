@@ -5,6 +5,7 @@
 #include <mutex>
 #include "ServerTypes.h"
 #include "MsgChat.h"
+#include "LockedResource.h"
 
 class SessionMgr;
 
@@ -19,14 +20,9 @@ public:
 	std::vector<std::string> lvl_base64;
 	std::vector<char> lvl_raw;
 
-	std::mutex usersNew_mut;
-	std::vector<UserConPtr> usersNew;
-
-	std::mutex usersExit_mut;
-	std::vector<UserConPtr> usersExit;
-
-	std::mutex chatMessages_mut;
-	std::vector<MsgChat> chatMessages;
+	LockedResource< std::vector<UserConPtr>>	lrUsersNew;
+	LockedResource< std::vector<UserConPtr>>	lrUsersExit;
+	LockedResource< std::vector<MsgChat>>		lrChatMessages;
 
 private:
 	// Should never be manipulated outside the class
