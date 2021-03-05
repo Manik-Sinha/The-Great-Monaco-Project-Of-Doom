@@ -10,6 +10,97 @@ SessionMgr::~SessionMgr()
 {
 }
 
+void SessionMgr::ShutdownServer()
+{
+    std::cout << "Shutting down server..." << std::endl;
+
+    this->server.stop();
+    { LOCK_SCOPE(lrSessions, sessions)
+
+        // We need to make a copy because or else
+        // we'll be iterating and removing from the 
+        // same source.
+        std::vector<SessionPtr> sessCpy;
+        for (auto s : sessions)
+            sessCpy.push_back(s.second);
+
+        for(auto s : sessCpy)
+            _ShutdownSession(s);
+    }
+
+    Sleep(500);
+    while (true)
+    {
+        Sleep(100);
+        { LOCK_SCOPE(lrSessions, sessions)
+            if (sessions.empty() == true)
+                break;
+        }
+        
+    }
+
+    this->serverThread.join();
+    std::cout << "Server thread joined." << std::endl;
+}
+
+void SessionMgr::ShutdownSession(SessionPtr session)
+{
+    { LOCK_SCOPE(lrSessions, sessions)
+        this->_ShutdownSession(session);
+    }
+}
+
+void SessionMgr::ShutdownSession(Session* pS)
+{
+    { LOCK_SCOPE(lrSessions, sessions)
+        
+        for (auto it : sessions)
+        {
+            if (it.second.get() == pS)
+            {
+                this->_ShutdownSession(it.second);
+                break;
+            }
+        }
+    }
+}
+
+void SessionMgr::_ShutdownSession(SessionPtr session)
+{
+
+    {LOCK_SCOPE(lrSessionsInShutdown, sessionsInShutdown)
+
+        auto it = lrSessions.data.find(session->roomName);
+        if (it != lrSessions.data.end())
+        {
+            std::cout << "Shutting session room " << session->roomName << std::endl;
+
+            session->keepRunning = false;
+            lrSessions.data.erase(it);
+            sessionsInShutdown.push_back(session);
+        }
+    }
+}
+
+void SessionMgr::_ShutdownSession(Session* pS)
+{
+
+    {LOCK_SCOPE(lrSessionsInShutdown, sessionsInShutdown)
+
+        auto it = lrSessions.data.find(pS->roomName);
+        if (it != lrSessions.data.end())
+        {
+            std::cout << "Shutting session room " << pS->roomName << std::endl;
+
+            it->second->keepRunning = false;
+
+            SessionPtr ptr = it->second;
+            lrSessions.data.erase(it);
+            sessionsInShutdown.push_back(ptr);
+        }
+    }
+}
+
 void SessionMgr::StartServer()
 {
     this->server.config.port = 7011;
@@ -23,7 +114,6 @@ void SessionMgr::StartServer()
         [this](std::shared_ptr<WsServer::Connection> connection) 
         { this->OnServer_Open(connection); };
 
-    // See RFC 6455 7.4.1. for status codes
     echo.on_close = 
         [this](std::shared_ptr<WsServer::Connection> connection, int status, const std::string& reason) 
         { this->OnServer_Close(connection, status, reason); };
@@ -40,8 +130,6 @@ void SessionMgr::StartServer()
             // Start WS-server
             this->server.start();
         });
-
-    //server_thread.join();
 }
 
 void SessionMgr::OnServer_Message(std::shared_ptr<WsServer::Connection> connection, std::shared_ptr<WsServer::Message> message)
@@ -196,10 +284,10 @@ void SessionMgr::OnServer_Close(std::shared_ptr<WsServer::Connection> connection
             { LOCK_SCOPE3(user->session->lrUsersExit, usersExit, usersExit)
                 usersExit.push_back(user);
             }
-            std::cout << "Closed user was queued for removal from session.";
+            std::cout << "Closed user was queued for removal from session." << std::endl;
 
             userLookup.erase(itFindUCP);
-            std::cout << "Closed user was removed from global server directory.";
+            std::cout << "Closed user was removed from global server directory." << std::endl;
 
         }
     }

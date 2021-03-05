@@ -13,6 +13,8 @@ void Session::ServerThreadFunction()
 	this->curRunning = true;
 	while (this->keepRunning == true)
 	{
+		bool removedUsers = false;
+
 		std::vector<UserConPtr> localNewUsers;
 		lrUsersNew.Swap(localNewUsers);
 
@@ -23,6 +25,8 @@ void Session::ServerThreadFunction()
 		// to them when we broadcast everything else.
 		if (localExitUsers.size() > 0)
 		{
+			removedUsers = true;
+
 			auto send_stream = std::make_shared<WsServer::SendStream>();
 			*send_stream << R"({"msg":"userleave", "data":[)";
 
@@ -126,13 +130,41 @@ void Session::ServerThreadFunction()
 				ucp->connection->send(msgChat);
 		}
 
+		// We may still need to check if anyone is in the entrance queue.
+		if (this->usersCurrent.size() == 0 && removedUsers == true)
+		{
+			// Hold the manager from doing session stuff while we figure this out.
+			// The last thing we need is the server finding us and giving us more
+			// people while we're about to exit.
+			{ 
+				LOCK_SCOPE3(this->manager->lrSessions, lrSessions, sessions)
+				LOCK_SCOPE(lrUsersNew, usersNew)
+
+				if (usersNew.empty() == true)
+				{
+					this->manager->_ShutdownSession(this);
+					break;
+				}
+			}
+		}
+
 		// Don't  run at full speed. We may want to find a way to sleep unless
 		// network messages are queued. Or the timer should take into account
 		// how long the previous frame took and subtract that from the polling delay.
 		Sleep(100); 
 	}
+
+	// Attempt to shutdown, one more time
+	this->manager->ShutdownSession(this);
+
 	this->curRunning = false;
-	
+	{
+		for (UserConPtr u : this->usersCurrent)
+			u->connection->send_close(0, "Room is closing");
+
+		this->usersCurrent.clear();
+	}
+	std::cout << "Exiting thread for session " << this->roomName << std::endl;
 }
 
 void Session::StartSession()

@@ -26,12 +26,17 @@ int main()
 	{
 		if (GetAsyncKeyState(VK_PAUSE) == true)
 		{
+			std::cout << "Detected close key" << std::endl;
 			// TODO: limit to if the console is in focus
 			break;
 		}
 
 		Sleep(1000);
 	}
+
+	std::cout << "Shutting down server." << std::endl;
+	gMgr.ShutdownServer();
+	std::cout << "Server has shut down" << std::endl;
 	return 0;
 
 }

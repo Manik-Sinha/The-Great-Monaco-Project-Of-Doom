@@ -17,6 +17,8 @@ public:
 	// TODO: Remove sessions are they are closed
 	// And close sessions if they are found to have 0 users.
 	LockedResource<std::map<std::string, SessionPtr>> lrSessions;
+	LockedResource<std::vector<SessionPtr>> lrSessionsInShutdown;
+
 	LockedResource<std::map<std::shared_ptr<WsServer::Connection>, std::string>> lrAwaitVerifs;
 	LockedResource<std::map< std::shared_ptr<WsServer::Connection>, UserConPtr>> lrUserLookup;
 
@@ -25,10 +27,19 @@ public:
 	std::thread serverThread;
 
 public:
+	// Function already assumes lrSessions is locked
+	void _ShutdownSession(SessionPtr session);
+	void _ShutdownSession(Session * pS);
+
+public:
 	SessionMgr();
 	~SessionMgr();
 
 	void StartServer();
+
+	void ShutdownServer();
+	void ShutdownSession(SessionPtr session);
+	void ShutdownSession(Session * pS);
 
 	void OnServer_Message(std::shared_ptr<WsServer::Connection> connection, std::shared_ptr<WsServer::Message> message);
 	void OnServer_Open(std::shared_ptr<WsServer::Connection> connection);
