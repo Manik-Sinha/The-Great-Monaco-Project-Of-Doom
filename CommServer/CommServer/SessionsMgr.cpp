@@ -1,5 +1,5 @@
 #include "PrecompiledHeader.h"
-#include <combaseapi.h> // GUID stuff
+
 #include "LockedResource.h"
 #include <mutex>
 SessionMgr::SessionMgr()
@@ -161,31 +161,18 @@ void SessionMgr::OnServer_Message(std::shared_ptr<WsServer::Connection> connecti
 
 void SessionMgr::OnServer_Open(std::shared_ptr<WsServer::Connection> connection)
 {
-    GUID guid;
-    CoCreateGuid(&guid);
-
-    // https://stackoverflow.com/a/27621890/2680066
-    char guidStr[37];
-    sprintf_s(
-        guidStr,
-        "%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX",
-        guid.Data1, guid.Data2, guid.Data3,
-        guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
-        guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
-
-    std::string guidString(guidStr);
-
+    std::string guid = GenerateGUID();
     { LOCK_SCOPE(lrAwaitVerifs, awaitVerifs)
-        awaitVerifs[connection] = guidStr;
+        awaitVerifs[connection] = guid;
     }
 
     std::stringstream ss;
-    ss << "User opened connection : Sending authorization query with unique key " << guidStr << "." << std::endl;
+    ss << "User opened connection : Sending authorization query with unique key " << guid << "." << std::endl;
 
     std::cout << ss.str();
 
     auto send_stream = std::make_shared<WsServer::SendStream>();
-    *send_stream << std::string(R"({"msg":"auth", "data":")") + guidString + R"("})";
+    *send_stream << std::string(R"({"msg":"auth", "data":")") + guid + R"("})";
     connection->send(send_stream);
 }
 

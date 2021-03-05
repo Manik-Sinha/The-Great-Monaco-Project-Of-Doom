@@ -12,5 +12,6 @@ using WsClient = SimpleWeb::SocketClient<SimpleWeb::WS>;
 #include "SessionsMgr.h"
 #include "Session.h"
 #include "UserCon.h"
+#include "Utils.h"
 
 #include "Simpleson/json.h"
